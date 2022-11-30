@@ -212,6 +212,45 @@ public class BookStoreTest {
 	}
 
 	/**
+	 * Test get books in demand.
+	 *
+	 * @throws BookStoreException the book store exception
+	 */
+	@Test
+	public void testGetBooksInDemand() throws BookStoreException {
+		HashSet<BookCopy> booksToBuy = new HashSet<BookCopy>();
+		booksToBuy.add(new BookCopy(TEST_ISBN, NUM_COPIES+1));
+
+
+		try {
+			client.buyBooks(booksToBuy);
+			fail();
+		} catch (BookStoreException ex) {
+			;
+		}
+		List<StockBook> booksInDemandList = storeManager.getBooksInDemand();
+		
+		assertTrue(booksInDemandList.size()>0);
+		
+		StockBook bookInDemand = booksInDemandList.get(0);
+		StockBook insertedBook = getDefaultBook();
+		
+		assertTrue(bookInDemand.getISBN() == insertedBook.getISBN());
+	}
+	
+	/**
+	 * Test get books in demand empty.
+	 *
+	 * @throws BookStoreException the book store exception
+	 */
+	@Test
+	public void testGetBooksInDemandEmpty() throws BookStoreException {
+		List<StockBook> booksInDemand = storeManager.getBooksInDemand();
+		
+		assertTrue(booksInDemand.size() == 0);
+	}
+	
+	/**
 	 * Tests that you can't buy more books than there are copies.
 	 *
 	 * @throws BookStoreException
