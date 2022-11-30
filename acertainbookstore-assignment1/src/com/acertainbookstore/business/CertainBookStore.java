@@ -317,7 +317,17 @@ public class CertainBookStore implements BookStore, StockManager {
 	 */
 	@Override
 	public synchronized List<Book> getTopRatedBooks(int numBooks) throws BookStoreException {
-		throw new BookStoreException();
+		if (numBooks > 0) {
+			throw new BookStoreException();
+		}
+
+		// Get all books that are top-rated according to numBooks.
+		List<BookStoreBook> listAllTopRatedBooks = bookMap.entrySet().stream().map(pair -> pair.getValue())
+				.sorted((o1, o2) ->  Float.compare(o2.getAverageRating() , o1.getAverageRating()))
+				.collect(Collectors.toList()).subList(0, numBooks-1);
+
+		return listAllTopRatedBooks.stream().map(BookStoreBook::immutableBook)
+				.collect(Collectors.toList());
 	}
 
 	/*
@@ -337,7 +347,17 @@ public class CertainBookStore implements BookStore, StockManager {
 	 */
 	@Override
 	public synchronized void rateBooks(Set<BookRating> bookRating) throws BookStoreException {
-		throw new BookStoreException();
+		if (bookRating == null) {
+			throw new BookStoreException();
+		}
+		for(BookRating bookRate : bookRating){
+			int isbn = bookRate.getISBN();
+			validateISBNInStock(isbn);
+			if(BookStoreUtility.isInvalidRating(bookRate.getRating())){
+				throw new BookStoreException();
+			}
+			bookMap.get(isbn).addRating(bookRate.getRating());
+		}
 	}
 
 	/*
