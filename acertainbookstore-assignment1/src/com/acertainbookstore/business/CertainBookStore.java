@@ -331,11 +331,6 @@ public class CertainBookStore implements BookStore, StockManager {
 	
 		return allBooks.stream().filter(book -> book.getNumSaleMisses() > 0).map(book -> book.immutableStockBook()).collect(Collectors.toList());
 	}
-//	public synchronized List<StockBook> getBooks() {
-//		Collection<BookStoreBook> bookMapValues = bookMap.values();
-//
-//		return bookMapValues.stream().map(book -> book.immutableStockBook()).collect(Collectors.toList());
-//	}
 
 	/*
 	 * (non-Javadoc)
