@@ -320,12 +320,18 @@ public class CertainBookStore implements BookStore, StockManager {
 		if (numBooks < 1) {
 			throw new BookStoreException();
 		}
-
+		
 		// Get all books that are top-rated according to numBooks.
 		List<BookStoreBook> listAllTopRatedBooks = bookMap.entrySet().stream().map(pair -> pair.getValue())
 				.sorted((o1, o2) ->  Float.compare(o2.getAverageRating() , o1.getAverageRating()))
-				.collect(Collectors.toList()).subList(0, numBooks);
-
+				.collect(Collectors.toList());
+		
+		if( numBooks > listAllTopRatedBooks.size()) {
+			numBooks = listAllTopRatedBooks.size();
+		}
+		
+		listAllTopRatedBooks=listAllTopRatedBooks.subList(0, numBooks);
+		
 		return listAllTopRatedBooks.stream().map(BookStoreBook::immutableBook)
 				.collect(Collectors.toList());
 	}

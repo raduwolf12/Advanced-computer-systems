@@ -229,6 +229,12 @@ public class BookStoreTest {
 
 		assertTrue(firstBookInList.getNumCopies() == (NUM_COPIES - 1));
 	}
+	
+	/**
+	 * Test buy no book.
+	 *
+	 * @throws BookStoreException the book store exception
+	 */
 	@Test
 	public void testBuyNoBook() throws BookStoreException {
 		// Set of books to buy
@@ -482,7 +488,13 @@ public class BookStoreTest {
 		 
 		 assertTrue(lastRatedBook.getISBN() == new_isbn);
 	 }
- 	@Test
+ 	
+	 /**
+	  * Test get top rated books negative.
+	  *
+	  * @throws BookStoreException the book store exception
+	  */
+	 @Test
 	 public void testGetTopRatedBooksNegative() throws BookStoreException {
 		 int new_isbn = 9999;
 
@@ -507,7 +519,29 @@ public class BookStoreTest {
 
 		 assertTrue(topRatedBooks.isEmpty());
 	 }
+	 @Test
+	 public void testGetTopRatedBooksMoreThanExisingBooks() throws BookStoreException {
+		 int new_isbn = 9999;
 
+		 // Add new books
+		 addBooks(new_isbn, 15);
+
+		 // rate books
+		 Set<BookRating> rateBooks = new HashSet<BookRating>();
+		 rateBooks.add(new BookRating(TEST_ISBN, 5));
+		 rateBooks.add(new BookRating(new_isbn, 2));
+
+		 
+
+		 client.rateBooks(rateBooks);
+
+		 List<Book> topRatedBooks = client.getTopRatedBooks(100);
+		 Book book = topRatedBooks.get(0);
+		 StockBook defaultBook = getDefaultBook();
+
+		 assertTrue(book.getISBN() == defaultBook.getISBN());
+
+	 }
 	/**
 	 * Test get books in demand.
 	 *
