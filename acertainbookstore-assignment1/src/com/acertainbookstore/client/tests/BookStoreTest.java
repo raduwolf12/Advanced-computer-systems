@@ -6,17 +6,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.acertainbookstore.business.*;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.acertainbookstore.business.Book;
-import com.acertainbookstore.business.BookCopy;
-import com.acertainbookstore.business.CertainBookStore;
-import com.acertainbookstore.business.ImmutableStockBook;
-import com.acertainbookstore.business.StockBook;
 import com.acertainbookstore.client.BookStoreHTTPProxy;
 import com.acertainbookstore.client.StockManagerHTTPProxy;
 import com.acertainbookstore.interfaces.BookStore;
@@ -209,6 +205,25 @@ public class BookStoreTest {
 		// Check pre and post state are same.
 		assertTrue(booksInStorePreTest.containsAll(booksInStorePostTest)
 				&& booksInStorePreTest.size() == booksInStorePostTest.size());
+	}
+
+	/**
+	 * Test rate books.
+	 *
+	 * @throws BookStoreException the book store exception
+	 */
+	@Test
+	public void testGetInvalidRateBooks() throws BookStoreException {
+		HashSet<BookRating> rateBooks = new HashSet<>();
+		rateBooks.add(new BookRating(0, 0 ));
+
+		try {
+			client.rateBooks(rateBooks);
+			fail();
+		} catch (BookStoreException ex) {
+			;
+		}
+		//TBD
 	}
 
 	/**

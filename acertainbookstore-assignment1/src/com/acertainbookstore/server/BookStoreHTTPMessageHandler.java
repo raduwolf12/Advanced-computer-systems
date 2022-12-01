@@ -129,7 +129,15 @@ public class BookStoreHTTPMessageHandler extends AbstractHandler {
 			case GETSTOCKBOOKSBYISBN:
 				getStockBooksByISBN(request, response);
 				break;
-				
+
+			case RATEBOOKS:
+				rateBooks(response);
+				break;
+
+			case GETTOPRATEDBOOKS:
+				getTopRatedBooks(response);
+				break;
+
 			case GETBOOKSINDEMAND:
 				getBooksInDemand(response);
 				break;
@@ -170,7 +178,36 @@ public class BookStoreHTTPMessageHandler extends AbstractHandler {
 		byte[] serializedResponseContent = serializer.get().serialize(bookStoreResponse);
 		response.getOutputStream().write(serializedResponseContent);
 	}
-	
+
+	@SuppressWarnings("unchecked")
+	private void rateBooks(HttpServletResponse response) throws IOException {
+
+		BookStoreResponse bookStoreResponse = new BookStoreResponse();
+
+		try {
+			bookStoreResponse.setList(myBookStore.getBooksInDemand());
+		} catch (BookStoreException ex) {
+			bookStoreResponse.setException(ex);
+		}
+
+		byte[] serializedResponseContent = serializer.get().serialize(bookStoreResponse);
+		response.getOutputStream().write(serializedResponseContent);
+	}
+
+	@SuppressWarnings("unchecked")
+	private void getTopRatedBooks(HttpServletResponse response) throws IOException {
+
+		BookStoreResponse bookStoreResponse = new BookStoreResponse();
+
+		try {
+			bookStoreResponse.setList(myBookStore.getBooksInDemand());
+		} catch (BookStoreException ex) {
+			bookStoreResponse.setException(ex);
+		}
+
+		byte[] serializedResponseContent = serializer.get().serialize(bookStoreResponse);
+		response.getOutputStream().write(serializedResponseContent);
+	}
 	
 	@SuppressWarnings("unchecked")
 	private void getBooksInDemand(HttpServletResponse response) throws IOException {
