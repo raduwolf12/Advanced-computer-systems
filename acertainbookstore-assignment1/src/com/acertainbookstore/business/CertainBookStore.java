@@ -317,14 +317,14 @@ public class CertainBookStore implements BookStore, StockManager {
 	 */
 	@Override
 	public synchronized List<Book> getTopRatedBooks(int numBooks) throws BookStoreException {
-		if (numBooks > 0) {
+		if (numBooks < 1) {
 			throw new BookStoreException();
 		}
 
 		// Get all books that are top-rated according to numBooks.
 		List<BookStoreBook> listAllTopRatedBooks = bookMap.entrySet().stream().map(pair -> pair.getValue())
 				.sorted((o1, o2) ->  Float.compare(o2.getAverageRating() , o1.getAverageRating()))
-				.collect(Collectors.toList()).subList(0, numBooks-1);
+				.collect(Collectors.toList()).subList(0, numBooks);
 
 		return listAllTopRatedBooks.stream().map(BookStoreBook::immutableBook)
 				.collect(Collectors.toList());
