@@ -57,8 +57,11 @@ public class TwoLevelLockingConcurrentCertainBookStore implements BookStore, Sto
 		}
 	}
 
-	private void releaseLocalLock(int isbn, boolean readLock) {
+	private void releaseLocalLock(int isbn, boolean readLock) throws BookStoreException {
 		ReadWriteLock lock = bookLocks.get(isbn);
+		if(lock==null) {
+			throw new BookStoreException(BookStoreConstants.ISBN + isbn + BookStoreConstants.INVALID);
+		}
 		if (readLock) {
 			lock.readLock().unlock();
 		} else {
@@ -145,9 +148,7 @@ public class TwoLevelLockingConcurrentCertainBookStore implements BookStore, Sto
 			for (StockBook book : bookSet) {
 				int isbn = book.getISBN();
 				bookMap.put(isbn, new BookStoreBook(book));
-			}
-			for (StockBook book : bookSet) {
-				bookLocks.put(book.getISBN(), new ReentrantReadWriteLock());
+				bookLocks.put(isbn, new ReentrantReadWriteLock());
 			}
 		} finally {
 			exclusiveLock.unlock();
