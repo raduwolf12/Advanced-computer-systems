@@ -1,9 +1,15 @@
 package com.acertainbookstore.client.tests;
 
-import static org.junit.Assert.*;
+import static java.util.Collections.singletonList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.junit.After;
@@ -14,8 +20,8 @@ import org.junit.Test;
 
 import com.acertainbookstore.business.Book;
 import com.acertainbookstore.business.BookCopy;
-import com.acertainbookstore.business.SingleLockConcurrentCertainBookStore;
 import com.acertainbookstore.business.ImmutableStockBook;
+import com.acertainbookstore.business.SingleLockConcurrentCertainBookStore;
 import com.acertainbookstore.business.StockBook;
 import com.acertainbookstore.business.TwoLevelLockingConcurrentCertainBookStore;
 import com.acertainbookstore.client.BookStoreHTTPProxy;
@@ -42,9 +48,8 @@ public class BookStoreTest {
 	private static boolean localTest = true;
 
 	/** Single lock test */
-	private static boolean singleLock = true;
+	private static boolean singleLock = false;
 
-	
 	/** The store manager. */
 	private static StockManager storeManager;
 
@@ -59,7 +64,7 @@ public class BookStoreTest {
 		try {
 			String localTestProperty = System.getProperty(BookStoreConstants.PROPERTY_KEY_LOCAL_TEST);
 			localTest = (localTestProperty != null) ? Boolean.parseBoolean(localTestProperty) : localTest;
-			
+
 			String singleLockProperty = System.getProperty(BookStoreConstants.PROPERTY_KEY_SINGLE_LOCK);
 			singleLock = (singleLockProperty != null) ? Boolean.parseBoolean(singleLockProperty) : singleLock;
 
@@ -87,12 +92,9 @@ public class BookStoreTest {
 	/**
 	 * Helper method to add some books.
 	 *
-	 * @param isbn
-	 *            the isbn
-	 * @param copies
-	 *            the copies
-	 * @throws BookStoreException
-	 *             the book store exception
+	 * @param isbn   the isbn
+	 * @param copies the copies
+	 * @throws BookStoreException the book store exception
 	 */
 	public void addBooks(int isbn, int copies) throws BookStoreException {
 		Set<StockBook> booksToAdd = new HashSet<StockBook>();
@@ -115,8 +117,7 @@ public class BookStoreTest {
 	/**
 	 * Method to add a book, executed before every test case is run.
 	 *
-	 * @throws BookStoreException
-	 *             the book store exception
+	 * @throws BookStoreException the book store exception
 	 */
 	@Before
 	public void initializeBooks() throws BookStoreException {
@@ -128,8 +129,7 @@ public class BookStoreTest {
 	/**
 	 * Method to clean up the book store, execute after every test case is run.
 	 *
-	 * @throws BookStoreException
-	 *             the book store exception
+	 * @throws BookStoreException the book store exception
 	 */
 	@After
 	public void cleanupBooks() throws BookStoreException {
@@ -139,8 +139,7 @@ public class BookStoreTest {
 	/**
 	 * Tests basic buyBook() functionality.
 	 *
-	 * @throws BookStoreException
-	 *             the book store exception
+	 * @throws BookStoreException the book store exception
 	 */
 	@Test
 	public void testBuyAllCopiesDefaultBook() throws BookStoreException {
@@ -168,8 +167,7 @@ public class BookStoreTest {
 	/**
 	 * Tests that books with invalid ISBNs cannot be bought.
 	 *
-	 * @throws BookStoreException
-	 *             the book store exception
+	 * @throws BookStoreException the book store exception
 	 */
 	@Test
 	public void testBuyInvalidISBN() throws BookStoreException {
@@ -198,8 +196,7 @@ public class BookStoreTest {
 	/**
 	 * Tests that books can only be bought if they are in the book store.
 	 *
-	 * @throws BookStoreException
-	 *             the book store exception
+	 * @throws BookStoreException the book store exception
 	 */
 	@Test
 	public void testBuyNonExistingISBN() throws BookStoreException {
@@ -228,8 +225,7 @@ public class BookStoreTest {
 	/**
 	 * Tests that you can't buy more books than there are copies.
 	 *
-	 * @throws BookStoreException
-	 *             the book store exception
+	 * @throws BookStoreException the book store exception
 	 */
 	@Test
 	public void testBuyTooManyBooks() throws BookStoreException {
@@ -254,8 +250,7 @@ public class BookStoreTest {
 	/**
 	 * Tests that you can't buy a negative number of books.
 	 *
-	 * @throws BookStoreException
-	 *             the book store exception
+	 * @throws BookStoreException the book store exception
 	 */
 	@Test
 	public void testBuyNegativeNumberOfBookCopies() throws BookStoreException {
@@ -280,8 +275,7 @@ public class BookStoreTest {
 	/**
 	 * Tests that all books can be retrieved.
 	 *
-	 * @throws BookStoreException
-	 *             the book store exception
+	 * @throws BookStoreException the book store exception
 	 */
 	@Test
 	public void testGetBooks() throws BookStoreException {
@@ -308,8 +302,7 @@ public class BookStoreTest {
 	/**
 	 * Tests that a list of books with a certain feature can be retrieved.
 	 *
-	 * @throws BookStoreException
-	 *             the book store exception
+	 * @throws BookStoreException the book store exception
 	 */
 	@Test
 	public void testGetCertainBooks() throws BookStoreException {
@@ -336,8 +329,7 @@ public class BookStoreTest {
 	/**
 	 * Tests that books cannot be retrieved if ISBN is invalid.
 	 *
-	 * @throws BookStoreException
-	 *             the book store exception
+	 * @throws BookStoreException the book store exception
 	 */
 	@Test
 	public void testGetInvalidIsbn() throws BookStoreException {
@@ -363,11 +355,241 @@ public class BookStoreTest {
 				&& booksInStorePreTest.size() == booksInStorePostTest.size());
 	}
 
+	public class buyBooks implements Runnable {
+		Set<BookCopy> books;
+		int opNum;
+
+		buyBooks(int opNum, Set<BookCopy> books) {
+			this.opNum = opNum;
+			this.books = books;
+		}
+
+		@Override
+		public void run() {
+			try {
+				for (int i = 0; i < opNum; i++) {
+					client.buyBooks(books);
+				}
+			} catch (BookStoreException e) {
+				e.printStackTrace();
+			}
+
+		}
+	}
+
+	public class addCopies implements Runnable {
+		Set<BookCopy> books;
+		int opNum;
+
+		addCopies(int opNum, Set<BookCopy> books) {
+			this.opNum = opNum;
+			this.books = books;
+		}
+
+		@Override
+		public void run() {
+			try {
+				for (int i = 0; i < opNum; i++) {
+					storeManager.addCopies(books);
+				}
+			} catch (BookStoreException e) {
+				e.printStackTrace();
+			}
+
+		}
+	}
+	
+	// Test scenario 1 from the assignment
+	@Test
+	public void test1() throws BookStoreException {
+		// starting from scratch
+		storeManager.removeAllBooks();
+
+		// Add some books to the store
+		addBooks(TEST_ISBN, NUM_COPIES * 100);
+
+		Set<BookCopy> books = new HashSet<>();
+		books.add(new BookCopy(TEST_ISBN, NUM_COPIES));
+
+		Thread c1 = new Thread(new buyBooks(NUM_COPIES * 10, books));
+		Thread c2 = new Thread(new addCopies(NUM_COPIES * 10, books));
+
+		c1.start();
+		c2.start();
+
+		try {
+			c1.join();
+			c2.join();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		assertEquals(500, storeManager.getBooksByISBN(new HashSet<>(singletonList(TEST_ISBN))).get(0).getNumCopies());
+	}
+	
+	public class buyAndRestock implements Runnable {
+		Set<BookCopy> books;
+		int opNum;
+
+		buyAndRestock(int opNum, Set<BookCopy> books) {
+			this.opNum = opNum;
+			this.books = books;
+		}
+
+		@Override
+		public void run() {
+			try {
+				for (int i = 0; i < opNum; i++) {
+					client.buyBooks(books);
+
+					storeManager.addCopies(books);
+				}
+			} catch (BookStoreException e) {
+				fail("Unexpected exception while buying and restocking books:" + e);
+			}
+
+		}
+	}
+	
+	public class checkSnapshot implements Runnable {
+		Map<Integer, Integer> expectedQuantitiesMap;
+		int opNum;
+
+		checkSnapshot(int opNum, Map<Integer, Integer> expectedQuantitiesMap) {
+			this.opNum = opNum;
+			this.expectedQuantitiesMap = expectedQuantitiesMap;
+		}
+
+		@Override
+		public void run() {
+
+			for (int i = 0; i < opNum; i++) {
+				try {
+					List<StockBook> books = storeManager.getBooks();
+					for (StockBook book : books) {
+						int expectedQuantity = this.expectedQuantitiesMap.get(book.getISBN());
+						assertEquals(expectedQuantity, book.getNumCopies());
+					}
+
+				} catch (BookStoreException e) {
+					fail("Unexpected exception while buying and restocking books:" + e);
+				}
+			}
+
+		}
+	}
+	
+	// Test scenario 2 from the assignment
+	@Test
+    public void test2() throws BookStoreException {
+
+        storeManager.removeAllBooks();
+
+        addBooks(TEST_ISBN, NUM_COPIES);
+        addBooks(TEST_ISBN+1,NUM_COPIES);
+
+		Set<BookCopy> booksToBuy = new HashSet<>();
+		booksToBuy.add(new BookCopy(TEST_ISBN, NUM_COPIES));
+		booksToBuy.add(new BookCopy(TEST_ISBN + 1, NUM_COPIES));
+
+        Map<Integer, Integer> expectedQuantities = new HashMap<Integer, Integer>();
+    	expectedQuantities.put(TEST_ISBN, NUM_COPIES);
+		expectedQuantities.put(TEST_ISBN + 1, NUM_COPIES);
+
+		int opNum = 100;
+
+		Thread c1 = new Thread(new buyAndRestock(opNum, booksToBuy));
+		Thread c2 = new Thread(new checkSnapshot(opNum, expectedQuantities));
+
+		c1.start();
+        c2.start();
+
+        try {
+            c1.join();
+            c2.join();
+        } catch (InterruptedException e) {
+        	fail("Interrupted while waiting for threads to finish: " + e);
+        }
+
+        assertTrue(true);
+
+    }
+
+	// test what happens when 2 clients buy all the books in the same time
+	@Test
+    public void test3() throws BookStoreException {
+
+        storeManager.removeAllBooks();
+
+        addBooks(TEST_ISBN, NUM_COPIES*100);
+        addBooks(TEST_ISBN+1,NUM_COPIES*100);
+
+		Set<BookCopy> books = new HashSet<>();
+		books.add(new BookCopy(TEST_ISBN, NUM_COPIES));
+		books.add(new BookCopy(TEST_ISBN + 1, NUM_COPIES));
+
+       
+
+		int opNum = 100;
+
+		Thread c1 = new Thread(new buyBooks(opNum, books));
+		Thread c2 = new Thread(new buyBooks(opNum, books));
+
+		c1.start();
+        c2.start();
+
+        try {
+            c1.join();
+            c2.join();
+        } catch (InterruptedException e) {
+        	fail("Interrupted while waiting for threads to finish: " + e);
+        }
+
+        assertEquals(0, storeManager.getBooksByISBN(new HashSet<>(singletonList(TEST_ISBN))).get(0).getNumCopies());
+        assertEquals(0, storeManager.getBooksByISBN(new HashSet<>(singletonList(TEST_ISBN+1))).get(0).getNumCopies());
+
+    }
+	// test what happens when a client is buying some books and the stock is replenish while other client add copies into the stock
+	@Test
+	public void test4() throws BookStoreException {
+
+		storeManager.removeAllBooks();
+
+		addBooks(TEST_ISBN, NUM_COPIES);
+		addBooks(TEST_ISBN + 1, NUM_COPIES);
+
+		Set<BookCopy> books = new HashSet<>();
+		books.add(new BookCopy(TEST_ISBN, NUM_COPIES));
+		books.add(new BookCopy(TEST_ISBN + 1, NUM_COPIES));
+
+		int opNum = 40;
+
+		Thread c1 = new Thread(new buyAndRestock(opNum, books));
+		Thread c2 = new Thread(new addCopies(opNum, books));
+
+		c1.start();
+		c2.start();
+
+		try {
+			c1.join();
+			c2.join();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		int copies = opNum * NUM_COPIES + NUM_COPIES;
+
+		assertEquals(copies,
+				storeManager.getBooksByISBN(new HashSet<>(singletonList(TEST_ISBN))).get(0).getNumCopies());
+		assertEquals(copies,
+				storeManager.getBooksByISBN(new HashSet<>(singletonList(TEST_ISBN + 1))).get(0).getNumCopies());
+	}
+	
+	
 	/**
 	 * Tear down after class.
 	 *
-	 * @throws BookStoreException
-	 *             the book store exception
+	 * @throws BookStoreException the book store exception
 	 */
 	@AfterClass
 	public static void tearDownAfterClass() throws BookStoreException {
