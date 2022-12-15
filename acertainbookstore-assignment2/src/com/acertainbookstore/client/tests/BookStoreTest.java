@@ -398,7 +398,7 @@ public class BookStoreTest {
 
 		}
 	}
-	
+
 	// Test scenario 1 from the assignment
 	@Test
 	public void test1() throws BookStoreException {
@@ -426,7 +426,7 @@ public class BookStoreTest {
 
 		assertEquals(500, storeManager.getBooksByISBN(new HashSet<>(singletonList(TEST_ISBN))).get(0).getNumCopies());
 	}
-	
+
 	public class buyAndRestock implements Runnable {
 		Set<BookCopy> books;
 		int opNum;
@@ -450,7 +450,7 @@ public class BookStoreTest {
 
 		}
 	}
-	
+
 	public class checkSnapshot implements Runnable {
 		Map<Integer, Integer> expectedQuantitiesMap;
 		int opNum;
@@ -478,22 +478,22 @@ public class BookStoreTest {
 
 		}
 	}
-	
+
 	// Test scenario 2 from the assignment
 	@Test
-    public void test2() throws BookStoreException {
+	public void test2() throws BookStoreException {
 
-        storeManager.removeAllBooks();
+		storeManager.removeAllBooks();
 
-        addBooks(TEST_ISBN, NUM_COPIES);
-        addBooks(TEST_ISBN+1,NUM_COPIES);
+		addBooks(TEST_ISBN, NUM_COPIES);
+		addBooks(TEST_ISBN + 1, NUM_COPIES);
 
 		Set<BookCopy> booksToBuy = new HashSet<>();
 		booksToBuy.add(new BookCopy(TEST_ISBN, NUM_COPIES));
 		booksToBuy.add(new BookCopy(TEST_ISBN + 1, NUM_COPIES));
 
-        Map<Integer, Integer> expectedQuantities = new HashMap<Integer, Integer>();
-    	expectedQuantities.put(TEST_ISBN, NUM_COPIES);
+		Map<Integer, Integer> expectedQuantities = new HashMap<Integer, Integer>();
+		expectedQuantities.put(TEST_ISBN, NUM_COPIES);
 		expectedQuantities.put(TEST_ISBN + 1, NUM_COPIES);
 
 		int opNum = 100;
@@ -502,33 +502,31 @@ public class BookStoreTest {
 		Thread c2 = new Thread(new checkSnapshot(opNum, expectedQuantities));
 
 		c1.start();
-        c2.start();
+		c2.start();
 
-        try {
-            c1.join();
-            c2.join();
-        } catch (InterruptedException e) {
-        	fail("Interrupted while waiting for threads to finish: " + e);
-        }
+		try {
+			c1.join();
+			c2.join();
+		} catch (InterruptedException e) {
+			fail("Interrupted while waiting for threads to finish: " + e);
+		}
 
-        assertTrue(true);
+		assertTrue(true);
 
-    }
+	}
 
 	// test what happens when 2 clients buy all the books in the same time
 	@Test
-    public void test3() throws BookStoreException {
+	public void test3() throws BookStoreException {
 
-        storeManager.removeAllBooks();
+		storeManager.removeAllBooks();
 
-        addBooks(TEST_ISBN, NUM_COPIES*100);
-        addBooks(TEST_ISBN+1,NUM_COPIES*100);
+		addBooks(TEST_ISBN, NUM_COPIES * 100);
+		addBooks(TEST_ISBN + 1, NUM_COPIES * 100);
 
 		Set<BookCopy> books = new HashSet<>();
 		books.add(new BookCopy(TEST_ISBN, NUM_COPIES));
 		books.add(new BookCopy(TEST_ISBN + 1, NUM_COPIES));
-
-       
 
 		int opNum = 100;
 
@@ -536,20 +534,22 @@ public class BookStoreTest {
 		Thread c2 = new Thread(new buyBooks(opNum, books));
 
 		c1.start();
-        c2.start();
+		c2.start();
 
-        try {
-            c1.join();
-            c2.join();
-        } catch (InterruptedException e) {
-        	fail("Interrupted while waiting for threads to finish: " + e);
-        }
+		try {
+			c1.join();
+			c2.join();
+		} catch (InterruptedException e) {
+			fail("Interrupted while waiting for threads to finish: " + e);
+		}
 
-        assertEquals(0, storeManager.getBooksByISBN(new HashSet<>(singletonList(TEST_ISBN))).get(0).getNumCopies());
-        assertEquals(0, storeManager.getBooksByISBN(new HashSet<>(singletonList(TEST_ISBN+1))).get(0).getNumCopies());
+		assertEquals(0, storeManager.getBooksByISBN(new HashSet<>(singletonList(TEST_ISBN))).get(0).getNumCopies());
+		assertEquals(0, storeManager.getBooksByISBN(new HashSet<>(singletonList(TEST_ISBN + 1))).get(0).getNumCopies());
 
-    }
-	// test what happens when a client is buying some books and the stock is replenish while other client add copies into the stock
+	}
+
+	// test what happens when a client is buying some books and the stock is
+	// replenish while other client add copies into the stock
 	@Test
 	public void test4() throws BookStoreException {
 
@@ -584,8 +584,7 @@ public class BookStoreTest {
 		assertEquals(copies,
 				storeManager.getBooksByISBN(new HashSet<>(singletonList(TEST_ISBN + 1))).get(0).getNumCopies());
 	}
-	
-	
+
 	/**
 	 * Tear down after class.
 	 *
