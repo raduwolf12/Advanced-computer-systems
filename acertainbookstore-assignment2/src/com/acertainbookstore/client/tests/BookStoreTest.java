@@ -48,7 +48,7 @@ public class BookStoreTest {
 	private static boolean localTest = true;
 
 	/** Single lock test */
-	private static boolean singleLock = false;
+	private static boolean singleLock = true;
 
 	/** The store manager. */
 	private static StockManager storeManager;
@@ -515,7 +515,7 @@ public class BookStoreTest {
 
 	}
 
-	// test what happens when 2 clients buy all the books in the same time
+	// test  what happens when 2 clients buy all the books at the same time
 	@Test
 	public void test3() throws BookStoreException {
 
