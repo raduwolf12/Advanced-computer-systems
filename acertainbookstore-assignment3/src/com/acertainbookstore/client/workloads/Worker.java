@@ -4,7 +4,7 @@
 package com.acertainbookstore.client.workloads;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -134,18 +134,14 @@ public class Worker implements Callable<WorkerRunResult> {
      */
 	private void runFrequentStockManagerInteraction() throws BookStoreException {
 		StockManager stockManager = configuration.getStockManager();
-
-		List<StockBook> stockBookList = stockManager.getBooks();
-		Collections.sort(stockBookList, (a, b) -> b.getNumCopies() - a.getNumCopies());
-
-		int numBooksWithLeastCopies = configuration.getNumBooksWithLeastCopies();
-		List<StockBook> booksWithLeastCopies = stockBookList.subList(0, numBooksWithLeastCopies);
-
 		Set<BookCopy> bookCopies = new HashSet<>();
-		for (StockBook book : booksWithLeastCopies) {
-			int isbn = book.getISBN();
-			int numAddCopies = configuration.getNumAddCopies();
-			bookCopies.add(new BookCopy(isbn, numAddCopies));
+
+		List<StockBook> sortedBooks = stockManager.getBooks().stream()
+				.sorted(Comparator.comparing(StockBook::getNumCopies).reversed())
+				.limit(configuration.getNumBooksWithLeastCopies()).collect(Collectors.toList());
+
+		for (StockBook stockBook : sortedBooks) {
+			bookCopies.add(new BookCopy(stockBook.getISBN(), configuration.getNumAddCopies()));
 		}
 
 		stockManager.addCopies(bookCopies);

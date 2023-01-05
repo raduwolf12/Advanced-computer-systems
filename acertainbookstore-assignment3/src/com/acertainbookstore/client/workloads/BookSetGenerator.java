@@ -20,7 +20,7 @@ import com.acertainbookstore.business.StockBook;
 public class BookSetGenerator {
 
 	Faker faker;
-	
+
 	public BookSetGenerator() {
 		faker = new Faker();
 	}
@@ -47,22 +47,24 @@ public class BookSetGenerator {
 	public Set<StockBook> nextSetOfStockBooks(int num) {
 		Set<StockBook> resultSet = new HashSet<>();
 		for (int i = 1; i <= num; i++) {
-		    resultSet.add(generateRandomBook());
+			resultSet.add(generateRandomBook());
 		}
 		return resultSet;
 	}
+
 	public ImmutableStockBook generateRandomBook() {
-		
-	    int isbn = faker.number().numberBetween(1000000, 9999999);
-	    String title = faker.book().title();
-	    String author = faker.book().author();
-	    float price = (float) faker.number().numberBetween(1, 100);
-	    int numCopies = faker.number().numberBetween(1, 1000);
-	    long numSaleMisses = faker.number().numberBetween(0, 10000);
-	    long numTimesRated = faker.number().numberBetween(0, 1000);
-	    long totalRating = faker.number().numberBetween(0, 5000);
-	    boolean editorPick = faker.bool().bool();
-	    return new ImmutableStockBook(isbn, title, author, price, numCopies, numSaleMisses, numTimesRated, totalRating, editorPick);
+
+		int isbn = faker.number().numberBetween(1000000, 9999999);
+		String title = faker.book().title();
+		String author = faker.book().author();
+		float price = (float) faker.number().numberBetween(1, 100);
+		int numCopies = faker.number().numberBetween(1, 1000);
+		long numSaleMisses = faker.number().numberBetween(0, 10000);
+		long numTimesRated = faker.number().numberBetween(0, 1000);
+		long totalRating = faker.number().numberBetween(0, 5);
+		boolean editorPick = faker.bool().bool();
+		return new ImmutableStockBook(isbn, title, author, price, numCopies, numSaleMisses, numTimesRated, totalRating,
+				editorPick);
 	}
 
 }

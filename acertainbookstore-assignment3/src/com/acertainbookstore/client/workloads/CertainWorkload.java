@@ -3,12 +3,22 @@
  */
 package com.acertainbookstore.client.workloads;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartUtilities;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.data.xy.XYDataset;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 
 import com.acertainbookstore.business.CertainBookStore;
 import com.acertainbookstore.business.StockBook;
@@ -27,64 +37,174 @@ import com.acertainbookstore.utils.BookStoreException;
  * 
  */
 public class CertainWorkload {
+	static int numConcurrentWorkloadThreads;
 
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) throws Exception {
-		int numConcurrentWorkloadThreads = 10;
+		numConcurrentWorkloadThreads = 10;
 		String serverAddress = "http://localhost:8081";
-		boolean localTest = true;
-		List<WorkerRunResult> workerRunResults = new ArrayList<WorkerRunResult>();
-		List<Future<WorkerRunResult>> runResults = new ArrayList<Future<WorkerRunResult>>();
+		boolean localTestAndRemote = true;
 
 		// Initialize the RPC interfaces if its not a localTest, the variable is
 		// overriden if the property is set
-		String localTestProperty = System
-				.getProperty(BookStoreConstants.PROPERTY_KEY_LOCAL_TEST);
-		localTest = (localTestProperty != null) ? Boolean
-				.parseBoolean(localTestProperty) : localTest;
+		String localTestProperty = System.getProperty(BookStoreConstants.PROPERTY_KEY_LOCAL_TEST);
+		localTestAndRemote = (localTestProperty != null) ? Boolean.parseBoolean(localTestProperty) : localTestAndRemote;
 
 		BookStore bookStore = null;
 		StockManager stockManager = null;
-		if (localTest) {
+		BookStore bookStoreRemote = null;
+		StockManager stockManagerRemote = null;
+		if (localTestAndRemote) {
 			CertainBookStore store = new CertainBookStore();
 			bookStore = store;
 			stockManager = store;
+			stockManagerRemote = new StockManagerHTTPProxy(serverAddress + "/stock");
+			bookStoreRemote = new BookStoreHTTPProxy(serverAddress);
 		} else {
-			stockManager = new StockManagerHTTPProxy(serverAddress + "/stock");
-			bookStore = new BookStoreHTTPProxy(serverAddress);
+			CertainBookStore store = new CertainBookStore();
+			bookStore = store;
+			stockManager = store;
 		}
+
+		// Generate data in the bookstore before running the workload
+		List<List<WorkerRunResult>> localResults = getWorkersRunResult(bookStore, stockManager);
+
+		List<List<WorkerRunResult>> remoteResults = getWorkersRunResult(bookStoreRemote, stockManagerRemote);
+
+//		 Finished initialization, stop the clients if not localTest
+		if (localTestAndRemote) {
+			((BookStoreHTTPProxy) bookStoreRemote).stop();
+			((StockManagerHTTPProxy) stockManagerRemote).stop();
+		}
+		System.out.println("Local: \n");
+		for (List<WorkerRunResult> r : localResults) {
+//			reportMetric(workerRunResults);
+			reportMetric(r);
+			System.out.println("\n");
+		}
+		System.out.println("Remote: \n");
+		for (List<WorkerRunResult> r : remoteResults) {
+//			reportMetric(workerRunResults);
+			reportMetric(r);
+			System.out.println("\n");
+		}
+		reportMetric(localResults, remoteResults);
+	}
+
+	private static List<List<WorkerRunResult>> getWorkersRunResult(BookStore bookStore, StockManager stockManager)
+			throws Exception {
+		List<List<WorkerRunResult>> totalWorkersRunResults = new ArrayList<>();
 
 		// Generate data in the bookstore before running the workload
 		initializeBookStoreData(bookStore, stockManager);
 
-		ExecutorService exec = Executors
-				.newFixedThreadPool(numConcurrentWorkloadThreads);
+		ExecutorService exec = Executors.newFixedThreadPool(numConcurrentWorkloadThreads);
 
+		// Run experiment numConcurrentWorkloadThreads times
 		for (int i = 0; i < numConcurrentWorkloadThreads; i++) {
-			WorkloadConfiguration config = new WorkloadConfiguration(bookStore,
-					stockManager);
-			Worker workerTask = new Worker(config);
-			// Keep the futures to wait for the result from the thread
-			runResults.add(exec.submit(workerTask));
-		}
+			List<Future<WorkerRunResult>> runResults = new ArrayList<>();
+			List<WorkerRunResult> workerRunResults = new ArrayList<>();
 
-		// Get the results from the threads using the futures returned
-		for (Future<WorkerRunResult> futureRunResult : runResults) {
-			WorkerRunResult runResult = futureRunResult.get(); // blocking call
-			workerRunResults.add(runResult);
+			// Run experiment with i workers and save result
+			for (int j = 0; j <= i; j++) {
+				WorkloadConfiguration config = new WorkloadConfiguration(bookStore, stockManager);
+				Worker workerTask = new Worker(config);
+
+				// Keep the futures to wait for the result from the thread
+				runResults.add(exec.submit(workerTask));
+			}
+
+			// Get the results from the threads using the futures returned
+			for (Future<WorkerRunResult> futureRunResult : runResults) {
+				WorkerRunResult runResult = futureRunResult.get(); // blocking call
+				workerRunResults.add(runResult);
+			}
+
+			// Add the experiment data to the results
+			totalWorkersRunResults.add(workerRunResults);
+			stockManager.removeAllBooks();
 		}
 
 		exec.shutdownNow(); // shutdown the executor
+		return totalWorkersRunResults;
+	}
 
-		// Finished initialization, stop the clients if not localTest
-		if (!localTest) {
-			((BookStoreHTTPProxy) bookStore).stop();
-			((StockManagerHTTPProxy) stockManager).stop();
+	private static JFreeChart createChart(XYDataset dataset, String title, String y) {
+		JFreeChart chart = ChartFactory.createXYLineChart(title, "Number of clients", y, dataset,
+				PlotOrientation.VERTICAL, true, true, false);
+		return chart;
+	}
+
+	private static XYDataset createDataset(List<Double> localList, List<Double> remoteList) {
+		XYSeries series1 = new XYSeries("Local");
+		for (int i = 0; i < localList.size(); i++) {
+			series1.add(i, localList.get(i));
 		}
 
-		reportMetric(workerRunResults);
+		XYSeries series2 = new XYSeries("Remote");
+		for (int i = 0; i < remoteList.size(); i++) {
+			series2.add(i, remoteList.get(i));
+		}
+
+		XYSeriesCollection dataset = new XYSeriesCollection();
+		dataset.addSeries(series1);
+		dataset.addSeries(series2);
+
+		return dataset;
+	}
+
+	private static List<Double> calculateLatency(List<List<WorkerRunResult>> workerRunResultsLists) {
+		List<Double> latencyList = new ArrayList<Double>();
+		for (List<WorkerRunResult> workerRunResults : workerRunResultsLists) {
+			double totalElapsedTime = 0;
+			for (WorkerRunResult workerRunResult : workerRunResults) {
+				totalElapsedTime += workerRunResult.getElapsedTimeInNanoSecs();
+			}
+			double averageLatency = totalElapsedTime / workerRunResults.size();
+			latencyList.add(averageLatency);
+		}
+		return latencyList;
+	}
+
+	private static List<Double> calculateThroughput(List<List<WorkerRunResult>> workerRunResultsLists) {
+		List<Double> throughputList = new ArrayList<Double>();
+		for (List<WorkerRunResult> workerRunResults : workerRunResultsLists) {
+			double totalElapsedTime = 0;
+			double totalSuccessfulInteractions = 0;
+			for (WorkerRunResult workerRunResult : workerRunResults) {
+				totalElapsedTime += workerRunResult.getElapsedTimeInNanoSecs();
+				totalSuccessfulInteractions += workerRunResult.getSuccessfulInteractions();
+			}
+			double aggregatedThroughput = totalSuccessfulInteractions / totalElapsedTime;
+			throughputList.add(aggregatedThroughput);
+		}
+		return throughputList;
+	}
+
+	public static void reportMetric(List<List<WorkerRunResult>> workerRunResults,
+			List<List<WorkerRunResult>> workerRunResults1) throws IOException {
+		List<Double> localLatency = new ArrayList<>();
+		List<Double> remoteLatency = new ArrayList<>();
+		localLatency = calculateLatency(workerRunResults);
+		remoteLatency = calculateLatency(workerRunResults1);
+
+		XYDataset datasetLatency = createDataset(localLatency, remoteLatency);
+
+		JFreeChart latencyChart = createChart(datasetLatency, "LocalvsRemote Latency", "Latency");
+		ChartUtilities.saveChartAsPNG(new File("latencyChart.png"), latencyChart, 500, 300);
+
+		List<Double> localThroughput = new ArrayList<>();
+		List<Double> remoteThroughput = new ArrayList<>();
+		localThroughput = calculateThroughput(workerRunResults);
+		remoteThroughput = calculateThroughput(workerRunResults1);
+
+		XYDataset datasetThroughput = createDataset(localThroughput, remoteThroughput);
+
+		JFreeChart throughputChart = createChart(datasetThroughput, "LocalvsRemote Throughput", "Throughput");
+		ChartUtilities.saveChartAsPNG(new File("throughputChart.png"), throughputChart, 500, 300);
+
 	}
 
 	/**
@@ -137,7 +257,7 @@ public class CertainWorkload {
 			throws BookStoreException {
 
 		BookSetGenerator bookSetGenerator = new BookSetGenerator();
-		Set<StockBook> stockBookSet = bookSetGenerator.nextSetOfStockBooks(1000);
+		Set<StockBook> stockBookSet = bookSetGenerator.nextSetOfStockBooks(1500);
 
 		stockManager.removeAllBooks();
 		stockManager.addBooks(stockBookSet);
