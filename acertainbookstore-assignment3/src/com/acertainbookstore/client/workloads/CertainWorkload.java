@@ -93,7 +93,38 @@ public class CertainWorkload {
 	 * @param workerRunResults
 	 */
 	public static void reportMetric(List<WorkerRunResult> workerRunResults) {
-		// TODO: You should aggregate metrics and output them for plotting here
+		int numSuccessfulInteractions = 0;
+		long elapsedTime = 0;
+		int numTotalRuns = 0;
+		int numSuccessfulFrequentInteractions = 0;
+		int numTotalFrequentInteractions = 0;
+
+		double aggregatedThroughput = 0;
+		double avgLatency = 0;
+
+		for (WorkerRunResult workerResult : workerRunResults) {
+			numSuccessfulInteractions += workerResult.getSuccessfulInteractions();
+			numTotalRuns += workerResult.getTotalRuns();
+			elapsedTime += workerResult.getElapsedTimeInNanoSecs();
+			numSuccessfulFrequentInteractions += workerResult.getSuccessfulFrequentBookStoreInteractionRuns();
+			numTotalFrequentInteractions += workerResult.getTotalFrequentBookStoreInteractionRuns();
+
+			double throughput = workerResult.getSuccessfulFrequentBookStoreInteractionRuns()
+					/ (double) workerResult.getElapsedTimeInNanoSecs();
+			aggregatedThroughput += throughput;
+			avgLatency += 1 / throughput;
+		}
+
+		System.out.println("Successful Interactions: " + numSuccessfulInteractions);
+		System.out.println("Successful Frequent Bookstore Interaction Runs: " + numSuccessfulFrequentInteractions);
+
+		System.out.println("Total runs: " + numTotalRuns);
+		System.out.println("Total Frequent Bookstore Interaction Runs: " + numTotalFrequentInteractions);
+
+		System.out.println("Elapsed Time: " + elapsedTime + "ns");
+
+		System.out.println("Aggregated Throughput: " + aggregatedThroughput);
+		System.out.println("Average Latency: " + avgLatency);
 	}
 
 	/**
@@ -102,13 +133,12 @@ public class CertainWorkload {
 	 * Ignores the serverAddress if its a localTest
 	 * 
 	 */
-	public static void initializeBookStoreData(BookStore bookStore,
-			StockManager stockManager) throws BookStoreException {
+	public static void initializeBookStoreData(BookStore bookStore, StockManager stockManager)
+			throws BookStoreException {
 
-		// TODO: You should initialize data for your bookstore here
 		BookSetGenerator bookSetGenerator = new BookSetGenerator();
 		Set<StockBook> stockBookSet = bookSetGenerator.nextSetOfStockBooks(1000);
-		
+
 		stockManager.removeAllBooks();
 		stockManager.addBooks(stockBookSet);
 	}
