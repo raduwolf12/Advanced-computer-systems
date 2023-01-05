@@ -5,11 +5,13 @@ package com.acertainbookstore.client.workloads;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import com.acertainbookstore.business.CertainBookStore;
+import com.acertainbookstore.business.StockBook;
 import com.acertainbookstore.client.BookStoreHTTPProxy;
 import com.acertainbookstore.client.StockManagerHTTPProxy;
 import com.acertainbookstore.interfaces.BookStore;
@@ -104,6 +106,10 @@ public class CertainWorkload {
 			StockManager stockManager) throws BookStoreException {
 
 		// TODO: You should initialize data for your bookstore here
-
+		BookSetGenerator bookSetGenerator = new BookSetGenerator();
+		Set<StockBook> stockBookSet = bookSetGenerator.nextSetOfStockBooks(1000);
+		
+		stockManager.removeAllBooks();
+		stockManager.addBooks(stockBookSet);
 	}
 }

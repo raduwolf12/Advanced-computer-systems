@@ -57,7 +57,7 @@ public class BookSetGenerator {
 	    String title = faker.book().title();
 	    String author = faker.book().author();
 	    float price = (float) faker.number().numberBetween(1, 100);
-	    int numCopies = faker.number().numberBetween(0, 1000);
+	    int numCopies = faker.number().numberBetween(1, 1000);
 	    long numSaleMisses = faker.number().numberBetween(0, 10000);
 	    long numTimesRated = faker.number().numberBetween(0, 1000);
 	    long totalRating = faker.number().numberBetween(0, 5000);
