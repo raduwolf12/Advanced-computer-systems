@@ -78,57 +78,40 @@ public class CertainWorkload {
 			((BookStoreHTTPProxy) bookStoreRemote).stop();
 			((StockManagerHTTPProxy) stockManagerRemote).stop();
 		}
-		System.out.println("Local: \n");
-		for (List<WorkerRunResult> r : localResults) {
-//			reportMetric(workerRunResults);
-			reportMetric(r);
-			System.out.println("\n");
-		}
-		System.out.println("Remote: \n");
-		for (List<WorkerRunResult> r : remoteResults) {
-//			reportMetric(workerRunResults);
-			reportMetric(r);
-			System.out.println("\n");
-		}
+
 		reportMetric(localResults, remoteResults);
 	}
 
 	private static List<List<WorkerRunResult>> getWorkersRunResult(BookStore bookStore, StockManager stockManager)
 			throws Exception {
-		List<List<WorkerRunResult>> totalWorkersRunResults = new ArrayList<>();
+		List<List<WorkerRunResult>> workersRunResults = new ArrayList<>();
 
-		// Generate data in the bookstore before running the workload
 		initializeBookStoreData(bookStore, stockManager);
 
 		ExecutorService exec = Executors.newFixedThreadPool(numConcurrentWorkloadThreads);
 
-		// Run experiment numConcurrentWorkloadThreads times
 		for (int i = 0; i < numConcurrentWorkloadThreads; i++) {
 			List<Future<WorkerRunResult>> runResults = new ArrayList<>();
 			List<WorkerRunResult> workerRunResults = new ArrayList<>();
 
-			// Run experiment with i workers and save result
 			for (int j = 0; j <= i; j++) {
 				WorkloadConfiguration config = new WorkloadConfiguration(bookStore, stockManager);
 				Worker workerTask = new Worker(config);
 
-				// Keep the futures to wait for the result from the thread
 				runResults.add(exec.submit(workerTask));
 			}
 
-			// Get the results from the threads using the futures returned
 			for (Future<WorkerRunResult> futureRunResult : runResults) {
-				WorkerRunResult runResult = futureRunResult.get(); // blocking call
+				WorkerRunResult runResult = futureRunResult.get(); 
 				workerRunResults.add(runResult);
 			}
 
-			// Add the experiment data to the results
-			totalWorkersRunResults.add(workerRunResults);
+			workersRunResults.add(workerRunResults);
 			stockManager.removeAllBooks();
 		}
 
-		exec.shutdownNow(); // shutdown the executor
-		return totalWorkersRunResults;
+		exec.shutdownNow();
+		return workersRunResults;
 	}
 
 	private static JFreeChart createChart(XYDataset dataset, String title, String y) {
